@@ -6,9 +6,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Data;
 using System.IO;
+using Newtonsoft.Json;
+using GroupDocs.Assembly.Data;
+using System.Diagnostics;
 
 namespace GroupDocs.AssemblyExamples.BusinessLayer
 {
+    #region DataLayer
     //ExStart:DataLayer
     public static class DataLayer
     {
@@ -16,6 +20,10 @@ namespace GroupDocs.AssemblyExamples.BusinessLayer
         public const string customerXMLfile = "../../../../Data/Data Sources/XML DataSource/Customers.xml";
         public const string orderXMLfile = "../../../../Data/Data Sources/XML DataSource/Orders.xml";
         public const string productOrderXMLfile = "../../../../Data/Data Sources/XML DataSource/ProductOrders.xml";
+        public const string jsonFile = "../../../../Data/Data Sources/JSON DataSource/CustomerData-Json.json";
+        public const string wordDataFile = "../../../../Data/Data Sources/Word DataSource/Managers Data.docx";
+        public const string excelDataFile = "../../../../Data/Data Sources/Excel DataSource/Contracts Data.xlsx";
+        public const string presentationDataFile = "../../../../Data/Data Sources/Presentation DataSource/Managers Data.pptx";
 
         #region DataInitialization
         //ExStart:PopulateData
@@ -26,7 +34,7 @@ namespace GroupDocs.AssemblyExamples.BusinessLayer
         /// <returns>Returns customer's complete information</returns>
         public static IEnumerable<BusinessObjects.Customer> PopulateData()
         {
-            BusinessObjects.Customer customer = new BusinessObjects.Customer { CustomerName = "Atir Tahir", CustomerContactNumber = "+9211874", ShippingAddress = "Flat # 1, Kiyani Plaza ISB" };
+            BusinessObjects.Customer customer = new BusinessObjects.Customer { CustomerName = "Atir Tahir", CustomerContactNumber = "+9211874", ShippingAddress = "Flat # 1, Kiyani Plaza ISB", Barcode = "123456789qwertyu0025" };
             customer.Order = new BusinessObjects.Order[]
             {
                   new BusinessObjects.Order { Product = new BusinessObjects.Product { ProductName ="Lumia 525" }, Customer = customer, Price= 170, ProductQuantity = 5, OrderDate = new DateTime(2015, 1, 1) }
@@ -35,7 +43,7 @@ namespace GroupDocs.AssemblyExamples.BusinessLayer
             yield return customer; //yield return statement will return one data at a time
 
 
-            customer = new BusinessObjects.Customer { CustomerName = "Usman Aziz", CustomerContactNumber = "+458789", ShippingAddress = "Quette House, Park Road, ISB" };
+            customer = new BusinessObjects.Customer { CustomerName = "Usman Aziz", CustomerContactNumber = "+458789", ShippingAddress = "Quette House, Park Road, ISB", Barcode = "123456789qwertyu0025" };
             customer.Order = new BusinessObjects.Order[]
             {
                   new BusinessObjects.Order { Product = new BusinessObjects.Product { ProductName = "Lenovo G50" }, Customer = customer, Price = 480, ProductQuantity = 2, OrderDate = new DateTime(2015, 2, 1) },
@@ -316,8 +324,8 @@ namespace GroupDocs.AssemblyExamples.BusinessLayer
                 return mainDs;
             }
             catch
-            { 
-                return null; 
+            {
+                return null;
             }
         }
         //ExEnd:GetAllDataXML
@@ -341,6 +349,417 @@ namespace GroupDocs.AssemblyExamples.BusinessLayer
         }
         //ExEnd:GetSingleCustomerXML
         #endregion
+
+
+        #region GetCustomerDataJson
+        //ExStart:GetCustomerDataJson
+        /// <summary>
+        /// Deserializes the json file, loop over the deserialized data
+        /// </summary>
+        /// <returns>Returns deserialized data</returns>
+        public static IEnumerable<BusinessObjects.Customer> GetCustomerDataFromJson()
+        {
+            string rawData = File.ReadAllText(jsonFile);
+            BusinessObjects.Customer[] customers = JsonConvert.DeserializeObject<BusinessObjects.Customer[]>(rawData);
+
+            foreach (BusinessObjects.Customer customer in customers)
+            {
+                yield return customer;
+            }
+        }
+        //ExEnd:GetCustomerDataJson
+        #endregion
+
+        #region GetCustomerOrderDataJson
+        //ExStart:GetCustomerOrderDataJson
+        /// <summary>
+        /// Deserializes the json file, loop over the deserialized data
+        /// </summary>
+        /// <returns>Returns deserialized data</returns>
+        public static IEnumerable<BusinessObjects.Order> GetCustomerOrderDataFromJson()
+        {
+            string rawData = File.ReadAllText(jsonFile);
+            BusinessObjects.Customer[] customers = JsonConvert.DeserializeObject<BusinessObjects.Customer[]>(rawData);
+
+            foreach (BusinessObjects.Customer customer in customers)
+            {
+                foreach (BusinessObjects.Order order in customer.Order)
+                {
+                    yield return order;
+                }
+            }
+        }
+        //ExEnd:GetCustomerOrderDataJson
+        #endregion
+
+        #region GetProductsJson
+        //ExStart:GetProductsDataJson
+        /// <summary>
+        /// Deserializes the json file, loop over the deserialized data
+        /// </summary>
+        /// <returns>Returns deserialized data</returns>
+        public static IEnumerable<BusinessObjects.Product> GetProductsDataJson()
+        {
+            string rawData = File.ReadAllText(jsonFile);
+            BusinessObjects.Customer[] customers = JsonConvert.DeserializeObject<BusinessObjects.Customer[]>(rawData);
+
+            foreach (BusinessObjects.Customer customer in customers)
+            {
+                foreach (BusinessObjects.Order order in customer.Order)
+                    yield return order.Product;
+            }
+        }
+        //ExEnd:GetProductsDataJson
+        #endregion
+
+        #region GetSingleCustomerDataJson
+        //ExStart:GetSingleCustomerDataJson
+        /// <summary>
+        /// Deserializes the json file, loop over the deserialized data
+        /// </summary>
+        /// <returns>Returns deserialized data</returns>
+        public static BusinessObjects.Customer GetSingleCustomerDataJson()
+        {
+            string rawData = File.ReadAllText(jsonFile);
+            BusinessObjects.Customer[] customers = JsonConvert.DeserializeObject<BusinessObjects.Customer[]>(rawData);
+
+            IEnumerator<BusinessObjects.Customer> customer = GetCustomerDataFromJson().GetEnumerator();
+            customer.MoveNext();
+            return customer.Current;
+        }
+        //ExEnd:GetSingleCustomerDataJson
+        #endregion
+        /// <summary>
+        /// Generate report from excel data source
+        /// </summary>
+        /// <returns></returns>
+        public static GroupDocs.Assembly.Data.DocumentTable ExcelData()
+        {
+            DocumentTableOptions options = new DocumentTableOptions();
+            options.FirstRowContainsColumnNames = true;
+
+            // Use data of the _first_ worksheet.
+            DocumentTable table = new DocumentTable(excelDataFile, 0, options);
+
+            // Check column count, names, and types.
+            Debug.Assert(table.Columns.Count == 3);
+
+            Debug.Assert(table.Columns[0].Name == "Client");
+            Debug.Assert(table.Columns[0].Type == typeof(string));
+
+            Debug.Assert(table.Columns[1].Name == "Manager");
+            Debug.Assert(table.Columns[1].Type == typeof(string));
+
+            // NOTE: A space is replaced with an underscore, because spaces are not allowed in column names.
+            Debug.Assert(table.Columns[2].Name == "Contract_Price");
+
+            // NOTE: The type of the column is double, because all cells in the column contain numeric values.
+            Debug.Assert(table.Columns[2].Type == typeof(double));
+            return table;
+        }
+        /// <summary>
+        /// Import word doc to presentation
+        /// </summary>
+        /// <returns></returns>
+        public static GroupDocs.Assembly.Data.DocumentTable ImportingWordDocToPresentation()
+        {
+
+            // Do not extract column names from the first row, so that the first row to be treated as a data row.
+            // Limit the largest row index, so that only the first four data rows to be loaded.
+            DocumentTableOptions options = new DocumentTableOptions();
+            options.MaxRowIndex = 3;
+
+            // Use data of the _second_ table in the document.
+            DocumentTable table = new DocumentTable(wordDataFile, 1, options);
+
+            // Check column count and names.
+            Debug.Assert(table.Columns.Count == 2);
+
+            // NOTE: Default column names are used, because we do not extract the names from the first row.
+            Debug.Assert(table.Columns[0].Name == "Column1");
+            Debug.Assert(table.Columns[1].Name == "Column2");
+            return table;
+        }
+
+        /// <summary>
+        /// Import spread sheet to html document
+        /// </summary>
+        /// <returns></returns>
+        public static GroupDocs.Assembly.Data.DocumentTable ImportingSpreadsheetToHtml()
+        {
+
+            // Do not extract column names from the first row, so that the first row to be treated as a data row.
+            // Limit the largest row index, so that only the first four data rows to be loaded.
+            DocumentTableOptions options = new DocumentTableOptions();
+            //options.MaxRowIndex = 3;
+
+            // Use data of the _second_ table in the document.
+            DocumentTable table = new DocumentTable(excelDataFile, 0);
+
+            // Check column count and names.
+            Debug.Assert(table.Columns.Count == 3);
+
+            // NOTE: Default column names are used, because we do not extract the names from the first row.
+            Debug.Assert(table.Columns[0].Name == "A");
+            Debug.Assert(table.Columns[1].Name == "B");
+            Debug.Assert(table.Columns[2].Name == "C");
+            return table;
+        }
+
+        /// <summary>
+        /// Presentation file data source
+        /// </summary>
+        /// <returns></returns>
+        public static GroupDocs.Assembly.Data.DocumentTable PresentationData()
+        {
+
+            // Do not extract column names from the first row, so that the first row to be treated as a data row.
+            // Limit the largest row index, so that only the first four data rows to be loaded.
+            DocumentTableOptions options = new DocumentTableOptions();
+            options.MaxRowIndex = 3;
+
+            // Use data of the _second_ table in the document.
+            DocumentTable table = new DocumentTable(presentationDataFile, 1, options);
+
+            // Check column count and names.
+            Debug.Assert(table.Columns.Count == 2);
+
+            // NOTE: Default column names are used, because we do not extract the names from the first row.
+            Debug.Assert(table.Columns[0].Name == "Column1");
+            Debug.Assert(table.Columns[1].Name == "Column2");
+            return table;
+        }
+
+        /// <summary>
+        /// Creates an Email data source object
+        /// </summary>
+        /// <param name="fileName">Name of the template file</param>
+        /// <param name="dataSource">data source</param>
+        /// <returns></returns>
+
+        public static object[] EmailDataSourceObject(string fileName, object dataSource)
+        {
+            //ExStart:EmailDataSourceObject
+            object[] dataSources;
+            string extension = Path.GetExtension(fileName);
+
+            if ((extension == ".msg") || (extension == ".eml"))
+            {
+                List<string> recipients = new List<string>();
+                recipients.Add("Named Recipient <named@example.com>");
+                recipients.Add("unnamed@example.com");
+
+                dataSources = new object[]
+                {
+                    dataSource,                  
+                    "Example Sender <sender@example.com>",
+                    recipients,
+                    "cc@example.com",
+                    Path.GetFileNameWithoutExtension(fileName)
+                };
+
+            }
+            else
+            {
+                dataSources = new object[] { dataSource };
+            }
+            return dataSources;
+            //ExEnd:EmailDataSourceObject
+        }
+        public static object[] EmailDataSourceObject(string fileName, object dataSource, string title)
+        {
+            //ExStart:EmailDataSourceObject
+            object[] dataSources;
+            string extension = Path.GetExtension(fileName);
+
+            if ((extension == ".msg") || (extension == ".eml"))
+            {
+                List<string> recipients = new List<string>();
+                recipients.Add("Named Recipient <named@example.com>");
+                recipients.Add("unnamed@example.com");
+
+                dataSources = new object[]
+                {
+                    dataSource,
+
+                    "Example Sender <sender@example.com>",
+                    recipients,
+                    "cc@example.com",
+                    Path.GetFileNameWithoutExtension(fileName),
+                    title,
+                };
+
+            }
+            else
+            {
+                dataSources = new object[] { dataSource };
+            }
+            return dataSources;
+            //ExEnd:EmailDataSourceObject
+        }
+        public static string[] EmailDataSourceName(string extension, string name)
+        {
+            //ExStart:EmailDataSourceName
+            string[] dataSourceNames;
+            if ((extension == ".msg") || (extension == ".eml"))
+            {
+                dataSourceNames = new string[]
+              {
+                    name,
+                    "sender",
+                    "recipients",
+                    "cc",
+                    "subject",
+              };
+
+            }
+            else
+            {
+                dataSourceNames = new string[] { };
+            }
+            return dataSourceNames;
+            //ExEnd:EmailDataSourceName
+        }
+        public static string[] EmailDataSourceName(string extension, string name,string title)
+        {
+            //ExStart:EmailDataSourceName
+            string[] dataSourceNames;
+            if ((extension == ".msg") || (extension == ".eml"))
+            {
+                dataSourceNames = new string[]
+              {
+                    name,
+                    "sender",
+                    "recipients",
+                    "cc",
+                    "subject",
+                    title,
+              };
+
+            }
+            else
+            {
+                dataSourceNames = new string[] { };
+            }
+            return dataSourceNames;
+            //ExEnd:EmailDataSourceName
+        }
+
+
     }
     //ExEnd:DataLayer
+    #endregion DataLayer
+    #region LazyAndRecursiveAccess
+    //ExStart:DynamicEntity
+    public interface IPropertyProvider<T>
+    {
+        T this[string propertyName] { get; }
+    }
+
+    public class DynamicEntity : IPropertyProvider<string>
+    {
+        /// <summary>
+        /// Gets a property value by its name.
+        /// </summary>
+        public string this[string propertyName]
+        {
+            get
+            {
+                // In this example, we simply return a property name as its value.
+                // In a real-life application, a real property value should be returned.
+                // This value can be cached using for example a Dictionary, or fetched
+                // every time the property is requested.
+                return propertyName + " Value";
+            }
+        }
+
+        /// <summary>
+        /// Provides access to individual related <see cref="DynamicEntity"/> instances
+        /// by their names.
+        /// </summary>
+        public IPropertyProvider<DynamicEntity> Entities
+        {
+            get { return mEntities; }
+        }
+
+        /// <summary>
+        /// Provides access to enumerations of related <see cref="DynamicEntity"/> instances
+        /// by their names.
+        /// </summary>
+        public IPropertyProvider<IEnumerable<DynamicEntity>> Children
+        {
+            get { return mChildren; }
+        }
+
+        private class ReferencedEntities : IPropertyProvider<DynamicEntity>
+        {
+            public DynamicEntity this[string propertyName]
+            {
+                get
+                {
+                    // In this example, we simply return the root entity.
+                    // In a real-life application, a DynamicEntity instance corresponding
+                    // to propertyName for the given root entity should be returned.
+                    // This instance can be cached using for example a Dictionary,
+                    // or fetched every time the referenced entity is requested.
+                    return mRootEntity;
+                }
+            }
+
+            public ReferencedEntities(DynamicEntity rootEntity)
+            {
+                // The reference to the root entity allows to access fields of the root entity
+                // (such as an identifier) in the above indexer for a real-life application.
+                mRootEntity = rootEntity;
+            }
+
+            private readonly DynamicEntity mRootEntity;
+        }
+
+        private class ChildEntities : IPropertyProvider<IEnumerable<DynamicEntity>>
+        {
+            public IEnumerable<DynamicEntity> this[string propertyName]
+            {
+                get
+                {
+                    // In this example, we simply return the root entity three times.
+                    // In a real-life application, an enumeration of DynamicEntity instances
+                    // corresponding to propertyName for the given root entity should be returned.
+                    // This enumeration can be cached using for example a Dictionary,
+                    // or fetched every time the child entities are requested.
+                    yield return mRootEntity;
+                    yield return mRootEntity;
+                    yield return mRootEntity;
+                }
+            }
+
+            public ChildEntities(DynamicEntity rootEntity)
+            {
+                // The reference to the root entity allows to access fields of the root entity
+                // (such as an identifier) in the above indexer for a real-life application.
+                mRootEntity = rootEntity;
+            }
+
+            private readonly DynamicEntity mRootEntity;
+        }
+        public DynamicEntity(Guid id)
+        {
+            // In this example, we use Guid to represent an entity identifier.
+            // In a real-life application, the identifier can be of any type or even missing.
+            mId = id;
+
+            // In this example, we simply initialize fields in the constructor.
+            // In a real-life application, these fields can be initialized lazily
+            // at the corresponding properties, if needed.
+            mEntities = new ReferencedEntities(this);
+            mChildren = new ChildEntities(this);
+        }
+
+        private readonly Guid mId;
+        private readonly ReferencedEntities mEntities;
+        private readonly ChildEntities mChildren;
+    }
+    //ExEnd:DynamicEntity
+    #endregion
+
 }
